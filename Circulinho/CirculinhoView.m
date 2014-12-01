@@ -10,107 +10,51 @@
 
 #import <QuartzCore/QuartzCore.h>
 
-@interface CirculinhoView () <UIScrollViewDelegate>
+static CGFloat const kAnimationPeriod = 1.0f;
+static CGFloat const kAnimationDelay = 0.92f;
+static CGFloat const kCircleLineWidth = 2.50f;
+static CGFloat const kCircleStartAngle = -0.5f * M_PI;
+static CGFloat const kCircleEndAngle = 1.5 * M_PI;
+static CGFloat const kCircleDiameter = 40.0f;
+static CGFloat const kTopPadding = 10.0f;
+static CGFloat const kScrollFactor = 0.45f;
+
+
+@interface CirculinhoView ()
 
 @property (nonatomic, strong) CAShapeLayer *circleLayer;
 @property (nonatomic, strong) CAShapeLayer *circleBrotherLayer;
+
 @property (nonatomic, assign) CGFloat scale;
+@property (nonatomic, assign) BOOL isAnimating;
 
 @property (nonatomic, strong) CABasicAnimation *growingAnimation;
 @property (nonatomic, strong) CABasicAnimation *shrinkingAnimation;
 @property (nonatomic, strong) CABasicAnimation *rotatingAnimation;
 @property (nonatomic, strong) CAAnimationGroup *animationGroup;
-@property (nonatomic, strong) CABasicAnimation *otherRotatingAnimation;
 
 
 @end
 
 @implementation CirculinhoView
 
-- (id)initWithFrame:(CGRect)frame {
+- (instancetype)init {
+    self = [self initWithFrame:CGRectMake(0.0f, 0.0f, kCircleDiameter, kCircleDiameter)];
+    return self;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame {
     
     self = [super initWithFrame:frame];
+    
     if (self) {
+        
         self.backgroundColor = [UIColor clearColor];
-        
-        CGFloat radius = CGRectGetWidth(self.bounds) * 0.9f / 2.0f;
-        CGPoint center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
-        CGFloat startAngle = -0.5f *M_PI;
-        CGFloat endAngle = 1.5f *M_PI;
-        BOOL clockwise = YES;
-        
-        self.circleLayer = [[CAShapeLayer alloc] init];
-        self.circleLayer.path = [UIBezierPath bezierPathWithArcCenter:center
-                                                     radius:radius
-                                                 startAngle:startAngle
-                                                   endAngle:endAngle
-                                                  clockwise:clockwise].CGPath;
-        
-        self.circleLayer.fillColor = [UIColor clearColor].CGColor;
-        self.circleLayer.strokeColor = [UIColor blueColor].CGColor;
-        self.circleLayer.strokeStart = 0.0f;
-        self.circleLayer.strokeEnd = 0.0f;
-        self.circleLayer.lineWidth = 2.5f;
-        self.circleLayer.frame = CGRectMake(0.0f, 0.0f, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame));
-        
-        [self.layer addSublayer:self.circleLayer];
-        
-        self.circleBrotherLayer = [[CAShapeLayer alloc] init];
-        self.circleBrotherLayer.path = [UIBezierPath bezierPathWithArcCenter:center
-                                                               radius:radius
-                                                           startAngle:startAngle
-                                                             endAngle:endAngle
-                                                            clockwise:clockwise].CGPath;
-        
-        self.circleBrotherLayer.fillColor = [UIColor clearColor].CGColor;
-        self.circleBrotherLayer.strokeColor = [UIColor blueColor].CGColor;
-        self.circleBrotherLayer.strokeStart = 0.0f;
-        self.circleBrotherLayer.strokeEnd = 0.0f;
-        self.circleBrotherLayer.lineWidth = 2.5f;
-        self.circleBrotherLayer.frame = CGRectMake(0.0f, 0.0f, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame));
-        
-        [self.layer addSublayer:self.circleBrotherLayer];
-        
-        self.growingAnimation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
-        self.growingAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
-        self.growingAnimation.toValue = [NSNumber numberWithFloat:1.0f];
-        self.growingAnimation.duration = 10.0f;
-        self.growingAnimation.repeatCount = HUGE_VALF;
-        self.growingAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
-        self.growingAnimation.delegate = self;
-//        self.shrinkingAnimation.fillMode = kCAFillModeForwards;
-
-        
-        self.shrinkingAnimation = [CABasicAnimation animationWithKeyPath:@"strokeStart"];
-        self.shrinkingAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
-        self.shrinkingAnimation.toValue = [NSNumber numberWithFloat:1.0f];
-        self.shrinkingAnimation.duration = 10.0f;
-        self.shrinkingAnimation.beginTime = 0.0f;
-        self.shrinkingAnimation.repeatCount = HUGE_VALF;
-        self.shrinkingAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
-        self.shrinkingAnimation.delegate = self;
-//        self.shrinkingAnimation.fillMode = kCAFillModeForwards;
-        
-        self.rotatingAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation"];
-        self.rotatingAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
-        self.rotatingAnimation.toValue = [NSNumber numberWithFloat:(2 * M_PI)];
-        self.rotatingAnimation.duration = 3.0f;
-        self.rotatingAnimation.repeatCount = HUGE_VALF;
-        self.rotatingAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
-//        self.rotatingAnimation.delegate = self;
-        
-        self.otherRotatingAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation"];
-        self.otherRotatingAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
-        self.otherRotatingAnimation.toValue = [NSNumber numberWithFloat:(2 * M_PI)];
-        self.otherRotatingAnimation.duration = 0.8f;
-        self.otherRotatingAnimation.repeatCount = HUGE_VALF;
-        self.otherRotatingAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
-        
-        self.animationGroup = [[CAAnimationGroup alloc] init];
-        self.animationGroup.delegate = self;
-        self.animationGroup.duration = 10.0f;
-        self.animationGroup.repeatCount = HUGE_VALF;
-        self.animationGroup.animations = @[self.growingAnimation, self.shrinkingAnimation/*, self.rotatingAnimation*/];
+        self.circleColor = [UIColor blueColor];
+        self.clockwise = YES;
+        self.lineWidth = @(kCircleLineWidth);
+        self.revolutionPeriod = @(kAnimationPeriod);
+        self.isAnimating = NO;
     }
     return self;
 }
@@ -124,112 +68,240 @@
 */
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-
-    CGPoint offset = scrollView.contentOffset;
-    CGFloat delta = - offset.y - 64.0f;
-    self.scale = delta / (self.frame.size.height);
     
-    NSLog(@"### Delta %f", delta);
-    NSLog(@"*** Scale %f", self.scale);
-    
-//    self.circleLayer.strokeEnd = MIN(self.scale, 0.8f);
-    
-    if (self.scale > 1.0f) {
+    if (!self.isAnimating) {
         
-//        self.transform = CGAffineTransformMakeTranslation(0.0f, delta / 2.0f);
+        CGPoint offset = scrollView.contentOffset;
+        CGFloat delta = - offset.y - self.frame.origin.y; // 64?
+        self.scale = delta / (self.frame.size.height) * kScrollFactor;
         
-        // if user looses
-        // trigger animation and reload in delegate
+        self.circleLayer.strokeEnd = self.scale;//MIN(self.scale, 1.0f);
         
-        // or begin animating already
-        // and waits for user to loose
-        // to trigger reload in delegate
-    }
-    else {
-//        self.transform = CGAffineTransformMakeTranslation(0.0f, 0.0f);
+        NSLog(@"alex stroke end %f", self.scale);
     }
 }
 
-- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView {
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
+    NSLog(@"scrollViewDidEndDragging");
     
-    if (self.scale > 1.0f) {
+    if (self.scale > 1.0f && !self.isAnimating) {
         
         if (self.delegate && [self.delegate respondsToSelector:@selector(circulinhoDidTriggerReload:)]) {
+            
             [self.delegate circulinhoDidTriggerReload:self];
-            [self startAnimatingWithScrollView:scrollView];
+            
+            self.isAnimating = YES;
+            NSLog(@"animando");
+            
+            UIEdgeInsets insets = scrollView.contentInset;
+            insets.top += self.frame.size.width + kTopPadding;
+            scrollView.contentInset = insets;
+            
+            
+            self.circleLayer.strokeStart = 0.0f;
+            self.circleLayer.strokeEnd = 1.0f;
+            self.shrinkingAnimation.repeatCount = 1.0f;
+            
+            [self.circleLayer addAnimation:self.shrinkingAnimation forKey:@"shrink"];
+            
+            self.shrinkingAnimation.repeatCount = HUGE_VALF;
         }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma mark - teste
+#pragma mark - CAAnimation Delegate
 
 - (void)animationDidStart:(CAAnimation *)anim {
-
 }
 
 - (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)finished {
     
-    CAAnimationGroup *animation = (CAAnimationGroup *)anim;
-    
-//    self.circleLayer.strokeStart = 0.0f;
-//    self.circleLayer.strokeEnd = 0.25f;
-//    self.circleLayer.transform = CATransform3DRotate(self.circleLayer.transform, -M_PI/2.0f, 0, 0, 0);
-    
-    if (!finished) {
-        return;
+    if ([anim respondsToSelector:@selector(keyPath)]) {
+        
+        CABasicAnimation *animation = (CABasicAnimation *)anim;
+        
+        if ([animation.keyPath isEqualToString:@"strokeStart"]) {
+            
+            self.circleLayer.strokeEnd = 0.0f;
+            self.circleLayer.strokeStart = 0.0f;
+            
+            [self startProgress];
+            return;
+        }
     }
     
-//    if ([animation.keyPath isEqualToString:@"strokeStart"]) {
-//        self.circleLayer.strokeStart = 0.0f;
-//        self.circleLayer.strokeEnd = 1.0f;
-//    }
-//    else if ([animation.keyPath isEqualToString:@"strokeEnd"]) {
-//        self.circleLayer.strokeStart = 0.0f;
-//        self.circleLayer.strokeEnd = 0.0f;
-//    }
+    self.circleLayer.strokeStart = 0.0f;
+    self.circleLayer.strokeEnd = 0.0f;
+    self.circleBrotherLayer.strokeStart = 0.0f;
+    self.circleBrotherLayer.strokeEnd = 0.0f;
+    self.isAnimating = NO;
+    NSLog(@"fim da animacao");
+    
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma mark - Properties override
+
+- (CAShapeLayer *)circleLayer {
+    
+    if (!_circleLayer) {
+        
+        CGFloat radius = CGRectGetWidth(self.bounds) * 0.95f / 2.0f;
+        CGPoint center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
+        
+        _circleLayer = [[CAShapeLayer alloc] init];
+        _circleLayer.path = [UIBezierPath bezierPathWithArcCenter:center
+                                                           radius:radius
+                                                       startAngle:kCircleStartAngle
+                                                         endAngle:kCircleEndAngle
+                                                        clockwise:self.clockwise].CGPath;
+        
+        _circleLayer.fillColor = [UIColor clearColor].CGColor;
+        _circleLayer.strokeColor = self.circleColor.CGColor;
+        _circleLayer.strokeStart = 0.0f;
+        _circleLayer.strokeEnd = 0.0f;
+        _circleLayer.lineWidth = self.lineWidth.floatValue;
+        _circleLayer.frame = CGRectMake(0.0f, 0.0f, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame));
+        
+        [self.layer addSublayer:_circleLayer];
+    }
+    
+    return _circleLayer;
+}
+
+- (CAShapeLayer *)circleBrotherLayer {
+    
+    if (!_circleBrotherLayer) {
+        
+        CGFloat radius = CGRectGetWidth(self.bounds) * 0.95f / 2.0f;
+        CGPoint center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
+        
+        _circleBrotherLayer = [[CAShapeLayer alloc] init];
+        _circleBrotherLayer.path = [UIBezierPath bezierPathWithArcCenter:center
+                                                                      radius:radius
+                                                                  startAngle:kCircleStartAngle
+                                                                    endAngle:kCircleEndAngle
+                                                                   clockwise:self.clockwise].CGPath;
+        
+        _circleBrotherLayer.fillColor = [UIColor clearColor].CGColor;
+        _circleBrotherLayer.strokeColor = [UIColor blueColor].CGColor;
+        _circleBrotherLayer.strokeStart = 0.0f;
+        _circleBrotherLayer.strokeEnd = 0.0f;
+        _circleBrotherLayer.lineWidth = kCircleLineWidth;
+        _circleBrotherLayer.frame = CGRectMake(0.0f, 0.0f, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame));
+        
+        [self.layer addSublayer:_circleBrotherLayer];
+    }
+    
+    return _circleBrotherLayer;
+}
+
+- (CABasicAnimation *)growingAnimation {
+    
+    if (!_growingAnimation) {
+        _growingAnimation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+        _growingAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
+        _growingAnimation.toValue = [NSNumber numberWithFloat:1.0f];
+        _growingAnimation.duration = self.revolutionPeriod.floatValue;
+        _growingAnimation.repeatCount = HUGE_VALF;
+        _growingAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+        _growingAnimation.delegate = self;
+    }
+    return _growingAnimation;
+}
+
+- (CABasicAnimation *)shrinkingAnimation {
+    if (!_shrinkingAnimation) {
+        _shrinkingAnimation = [CABasicAnimation animationWithKeyPath:@"strokeStart"];
+        _shrinkingAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
+        _shrinkingAnimation.toValue = [NSNumber numberWithFloat:1.0f];
+        _shrinkingAnimation.duration = self.revolutionPeriod.floatValue;
+        _shrinkingAnimation.repeatCount = HUGE_VALF;
+        _shrinkingAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
+        _shrinkingAnimation.delegate = self;
+    }
+    return _shrinkingAnimation;
+    
+}
+
+- (CABasicAnimation *)rotatingAnimation {
+    
+    if (!_rotatingAnimation) {
+        _rotatingAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation"];
+        _rotatingAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
+        _rotatingAnimation.toValue = [NSNumber numberWithFloat:(2 * M_PI)];
+        _rotatingAnimation.duration = 3.0f;
+        _rotatingAnimation.repeatCount = HUGE_VALF;
+        _rotatingAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
+    }
+    return _rotatingAnimation;
+}
+
+- (CAAnimationGroup *)animationGroup {
+    
+    if (!_animationGroup) {
+        
+        _animationGroup = [[CAAnimationGroup alloc] init];
+        _animationGroup.delegate = self;
+        _animationGroup.duration = kAnimationPeriod;
+        _animationGroup.repeatCount = HUGE_VALF;
+        _animationGroup.animations = @[self.growingAnimation, self.shrinkingAnimation/*, self.rotatingAnimation*/];
+    }
+    return _animationGroup;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark - Public methods
 
-- (void)teste {
-    [self.circleLayer addAnimation:self.animationGroup forKey:@"teste"];
-}
-
 - (void)startAnimatingWithScrollView:(UIScrollView *)scrollView {
     
+    if (self.isAnimating) return;
+    
     UIEdgeInsets insets = scrollView.contentInset;
-    insets.top += self.frame.size.width + 10.0f;
-    scrollView.contentInset = insets;
     
-    NSLog(@"====> Começou a animar!");
-//    [self.circleLayer addAnimation:self.shrinkingAnimation forKey:@"shrinkAnimation"];
-//    [self.circleLayer addAnimation:self.rotatingAnimation forKey:@"transform.rotation"];
+    [UIView animateWithDuration:0.4f animations:^{
+        scrollView.contentOffset = CGPointMake(0.0f, -(insets.top + self.frame.size.width + kTopPadding));
+    } completion:^(BOOL finished) {
+        UIEdgeInsets insets = scrollView.contentInset;
+        insets.top += self.frame.size.width + kTopPadding;
+        scrollView.contentInset = insets;
+    }];
     
-    self.circleLayer.strokeEnd = 0.25f;
-    self.circleLayer.strokeStart = 0.25f;
-    
-    [self.circleLayer addAnimation:self.animationGroup forKey:@"spinning"];
-    
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(9 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self.circleBrotherLayer addAnimation:self.animationGroup forKey:@"spinningToo"];
-    });
-
-//    [self.circleBrotherLayer addAnimation:self.otherRotatingAnimation forKey:@"rotating"];
+    self.isAnimating = YES;
+    [self startProgress];
 
 }
 
 - (void)stopAnimatingWithScrollView:(UIScrollView *)scrollView {
     
-    UIEdgeInsets insets = scrollView.contentInset;
-    insets.top -= self.frame.size.width + 10.0f;
-    scrollView.contentInset = insets;
+    [UIView animateWithDuration:0.4f animations:^{
+        scrollView.contentOffset = CGPointMake(0.0f, -64.0f); // 64 hardcoded
+    } completion:^(BOOL finished) {
+        UIEdgeInsets insets = scrollView.contentInset;
+        insets.top -= self.frame.size.width + kTopPadding;
+        scrollView.contentInset = insets;
+    }];
     
     NSLog(@"====> Terminou de animar!");
     [self.circleLayer removeAllAnimations];
     [self.circleBrotherLayer removeAllAnimations];
     
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma mark - Private methods
+
+- (void)startProgress {
+    
+    NSLog(@"====> Começou a animar!");
+    
+    [self.circleLayer addAnimation:self.animationGroup forKey:@"spinning"];
+    
+    CGFloat delay = kAnimationDelay * self.revolutionPeriod.floatValue;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self.circleBrotherLayer addAnimation:self.animationGroup forKey:@"spinningToo"];
+    });
 }
 
 

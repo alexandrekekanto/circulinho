@@ -50,10 +50,18 @@
                                              metrics:nil
                                                views:viewsDict]];
     
-    self.viewLoading = [[CirculinhoView alloc] initWithFrame:CGRectMake(140.0f, 64.0f, 40.0f, 40.0f)];
+    self.viewLoading = [[CirculinhoView alloc] initWithFrame:CGRectMake(140.0f, 74.0f, 40.0f, 40.0f)];
     self.viewLoading.delegate = self;
     
     [self.view addSubview:self.viewLoading];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self.viewLoading startAnimatingWithScrollView:self.tableView];
+    });
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self.viewLoading stopAnimatingWithScrollView:self.tableView];
+    });
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,7 +69,7 @@
 
 - (void)circulinhoDidTriggerReload:(CirculinhoView *)circulinho {
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(30 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         self.tableData = [[self.tableData reverseObjectEnumerator] allObjects];
         [self.tableView reloadData];
         [self.viewLoading stopAnimatingWithScrollView:self.tableView];
@@ -100,7 +108,7 @@
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
     
-    [self.viewLoading scrollViewDidEndDragging:scrollView];
+    [self.viewLoading scrollViewDidEndDragging:scrollView willDecelerate:decelerate];
 }
 
 - (void)didReceiveMemoryWarning {

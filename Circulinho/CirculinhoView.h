@@ -16,16 +16,18 @@
 
 @end
 
-@interface CirculinhoView : UIView
+@interface CirculinhoView : UIView <UIScrollViewDelegate>
 
 @property (nonatomic, weak) id<CirculinhoDelegate> delegate;
+@property (nonatomic, strong) UIColor *circleColor;
+@property (nonatomic, strong) NSNumber *lineWidth;
+@property (nonatomic, strong) NSNumber *revolutionPeriod;
+@property (nonatomic, assign) BOOL clockwise;
 
-- (id)initWithFrame:(CGRect)frame;
-- (void)scrollViewDidScroll:(UIScrollView *)scrollView;
-- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView;
+
+- (instancetype)init;
+- (instancetype)initWithFrame:(CGRect)frame;
 - (void)startAnimatingWithScrollView:(UIScrollView *)scrollView;
 - (void)stopAnimatingWithScrollView:(UIScrollView *)scrollView;
-
-- (void)teste;
 
 @end
